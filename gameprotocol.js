@@ -11,10 +11,13 @@ const ServerOps = require('./serverops.js');
 class GameRequest {
     static REQT = {
         LGIN: "LGIN",   // will happen on connection
+        JOIN: "JOIN",   // updating username
         LOUT: "LOUT",   // will happen on close
         MOVE: "MOVE",
         ROTA: "ROTA",
-        ITEM: "ITEM"   
+        ITEM: "ITEM",
+        HITS: "HITS",    // attempt hit on client-side (naive implementation)  
+        ATTK: "ATTK"    // broadcast player shooting 
     };
 
     constructor() {
@@ -68,10 +71,13 @@ class GameResponse {
         MOVE: "MOVE",   // broadcast movement of one player to everyone else
         ROTA: "ROTA",   // broadcast rotation of one player to everyone else
         GOOD: "GOOD",
+        JOIN: "JOIN",   // for leaderboard purposes
         ERRM: "ERRM",
         EXIT: "EXIT",    // broadcast player left the game
         ENTR: "ENTR",    // broadcast player entered the game
-        ITEM: "ITEM" 
+        ITEM: "ITEM",
+        HITS: "HITS",    // attempt hit on client-side (naive implementation)  
+        ATTK: "ATTK"    // broadcast enemy shooting
     };
 
     constructor() {
@@ -153,7 +159,7 @@ class GameProtocol {
             request.unmarshal(requestJSON);
             response = gameOps.process(request, response);
             if(response != null)
-                this.broadcastMessage(response.marshal());    // assume that the request we get is a MOVE for now.
+                this.broadcastMessage(response.marshal());    
         }  
         catch (error) {
             // ignore message if not in json format
@@ -175,19 +181,17 @@ class GameProtocol {
         let spawn_response = new GameResponse();
         spawn_response = gameOps.process(login_req, spawn_response);     // update server because of player login then return a valid response
         this.clientId = spawn_response.getValue("0");   // remember websocket client id just in case user disconnects
-        console.log(`Player ${this.clientId} has connected.`);
 
         let spawn_msg = spawn_response.marshal();
         this.ws.send(spawn_msg);
 
         let enter_response = new GameResponse();    // let other players know client entered the game
         enter_response.setType("ENTR");
-        enter_response.setData({"PID" : spawn_response.getValue("0"), "LOC" : "0 0"})   // assume player spawns at center of map
+        enter_response.setData({"PID" : spawn_response.getValue("0"), "LOC" : "-4.38 -1.61"})   // assume player spawns at center of map
         this.broadcastMessage(enter_response.marshal());
     }
 
     leaveOnDisconnection() {
-        console.log(`Player ${this.clientId} has disconnected.`);
         let logout_req = new GameRequest();
         logout_req.setType("LOUT");
         logout_req.setData({"PID" : this.clientId});

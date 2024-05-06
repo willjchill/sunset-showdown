@@ -4,9 +4,10 @@
 */
 
 // SAVE OUR DATABASE HERE FOR NOW
-// PID=[LOC] [ROTA] [ITEM] ...
+// PID=[LOC] [ROTA] [ITEM] [SCORE] ...
 // every space -> new attribute to maintain Dictionary<string, string> data type
-let gameState = {}  // contains player id and location of all players
+let gameState = {}  // contains player id and location of all players + score
+let leaderboard = {}    // contains top 3 players
 let id_counter = 1;
 
 class ServerOps {
@@ -16,13 +17,28 @@ class ServerOps {
             "LGIN" : this._doLogin,
             "ROTA" : this._doRotate,
             "LOUT" : this._doLogout,
-            "ITEM" : this._doItem
+            "ITEM" : this._doItem,
+            "ATTK" : this._doAttack,
+            "HITS" : this._doHits,
+            "JOIN" : this._doJoin
         }
+    }
+
+    // update leaderboard AFTER login
+    _doJoin(request, response=null) {
+        let request_data = request.getData();
+        username = request_data["UID"];
+        gameState[request_data["PID"]][username] = 0;  // default score 0   
+        if(response != null) {
+            response.setType("JOIN");   // broadcast updated leaderboard
+            response.setData(request_data);
+        }
+        return response
     }
 
     // return a response after login
     _doLogin(request, response=null) {
-        gameState[id_counter.toString()] = {"LOC" : "0 0", "ROT" : "0", "ITM" : "0"};
+        gameState[id_counter.toString()] = {"LOC" : "-4.38 -1.61", "ROT" : "0", "ITM" : "0"};
         console.log(gameState);
         if(response != null) {
             response.setType("SPWN");
@@ -38,6 +54,7 @@ class ServerOps {
             console.log(gameState_string);
             response.setData(gameState_string);  // inform user about current game state when spawning
             response.addKey("0", id_counter.toString());    // informing player of their assigned player id
+            console.log(`Player ${id_counter} has connected.`);
             id_counter += 1; 
         }
         return response;
@@ -45,6 +62,7 @@ class ServerOps {
 
     // delete user from gamestate upon logout
     _doLogout(request, response=null) {
+        console.log(`Player ${request.getValue("PID")} has disconnected.`);
         delete gameState[request.getValue("PID")]; // delete based on playerid
         if(response != null) {
             response.setType("EXIT");
@@ -89,6 +107,24 @@ class ServerOps {
             response.setData(request_data); // request data is player id so everyone knows 
         }
         return response;
+    }
+
+    _doAttack(request, response=null) {
+        let request_data = request.getData();
+        if(response != null) {
+            response.setType("ATTK");
+            response.setData(request_data); 
+        }
+        return response;
+    }
+
+    _doHits(request, response=null) {
+        let request_data = request.getData();
+        if(response != null) {
+            response.setType("HITS");
+            response.setData(request_data); 
+        }
+        return response;     
     }
 }
 
