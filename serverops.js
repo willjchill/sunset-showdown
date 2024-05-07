@@ -8,6 +8,8 @@
 // every space -> new attribute to maintain Dictionary<string, string> data type
 let gameState = {}  // contains player id and location of all players + score
 let leaderboard = {}    // contains top 3 players
+const random_player_spawn = ["-4.38 -1.61", "-18.22 -11.7", "4.81 -5.84", "2.97 8.17", "-13.17 3.69"]    // list of random possible spawn locations (we'll have 5 default)
+// const random_item_spawn = ["-7.53 1.14", "-0.79 -11.68", "-18.72 6.32", "14.79 9.24", "-14.02 6.04"]   
 let id_counter = 1;
 
 class ServerOps {
@@ -38,7 +40,8 @@ class ServerOps {
 
     // return a response after login
     _doLogin(request, response=null) {
-        gameState[id_counter.toString()] = {"LOC" : "-4.38 -1.61", "ROT" : "0", "ITM" : "0"};
+        var randomNumber = Math.floor(Math.random() * 5); // spawn at a random location
+        gameState[id_counter.toString()] = {"LOC" : random_player_spawn[randomNumber], "ROT" : "0", "ITM" : "0"};
         console.log(gameState);
         if(response != null) {
             response.setType("SPWN");

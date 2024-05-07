@@ -175,19 +175,20 @@ class GameProtocol {
           }, { ws: this.ws });
     }
 
+    
     spawnOnConnection() {
         let login_req = new GameRequest();   // create standard login request for player
         login_req.setType("LGIN");
         let spawn_response = new GameResponse();
         spawn_response = gameOps.process(login_req, spawn_response);     // update server because of player login then return a valid response
         this.clientId = spawn_response.getValue("0");   // remember websocket client id just in case user disconnects
-
         let spawn_msg = spawn_response.marshal();
         this.ws.send(spawn_msg);
 
+        var coordinates = spawn_response.getValue(spawn_response.getValue("0")).split(" ");
         let enter_response = new GameResponse();    // let other players know client entered the game
         enter_response.setType("ENTR");
-        enter_response.setData({"PID" : spawn_response.getValue("0"), "LOC" : "-4.38 -1.61"})   // assume player spawns at center of map
+        enter_response.setData({"PID" : spawn_response.getValue("0"), "LOC" : `${coordinates[0]} ${coordinates[1]}`})   // assume player spawns at center of map
         this.broadcastMessage(enter_response.marshal());
     }
 
